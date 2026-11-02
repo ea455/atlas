@@ -358,22 +358,42 @@
     .art svg * { animation: none !important; transition: none !important; }
   }
 
-  @media (max-height: 720px) { .body p { display: none; } }
+  @media (max-height: 720px) and (min-width: 901px) { .body p { display: none; } }
 
-  /* Phones and touch screens: normal-width cards you swipe through */
-  @media (max-width: 700px), (hover: none) {
-    .tile { flex: 0 0 min(72vw, 300px); }
-    .tile .body p, .tile .go, .tile .badge, .tile .links { opacity: 1; transform: none; pointer-events: auto; }
+  /* Touch screens wide enough for the desktop layout (e.g. iPad landscape):
+     equal tiles, tap opens the app */
+  @media (hover: none) and (min-width: 901px) {
+    .tile .go, .tile .badge, .tile .links { opacity: 1; transform: none; pointer-events: auto; }
   }
+
+  /* ---------- Phones and small tablets: a normal scrolling page ---------- */
   @media (max-width: 900px) {
-    .tip { display: none; }
-    .tip-pill { display: inline-block; }
+    body { height: auto; min-height: 100dvh; overflow-x: hidden; overflow-y: auto; display: block; }
+    .topbar { margin-bottom: 8px; }
+    .logo { height: 54px; }
+    #today { font-size: 13px; }
+    .hero { flex-direction: column; align-items: stretch; gap: 26px; padding: 28px 0 30px; max-width: 640px; }
+    h1 { font-size: min(24vw, 150px); }
+    .tip { display: block; flex: none; width: 100%; height: clamp(300px, 46vh, 380px); transform: none !important; }
+    .tip-pill { display: none; }
+
+    .dock { max-width: 640px; }
+    .apps { display: grid; grid-template-columns: 1fr; gap: 12px; height: auto; overflow: visible; }
+    .tile { flex-direction: row; min-height: 112px; flex: none; }
+    .tile .art { flex: none; width: 112px; height: auto; }
+    .tile .body, .tile:not(.open) .body { flex: 1; height: auto; padding: 14px 64px 14px 16px; display: flex; align-items: center; }
+    .tile .body:has(.badge) { padding-right: 16px; padding-bottom: 46px; }
+    .tile .badge { bottom: 12px; translate: none; right: auto; left: 16px; }
+    body::after { display: none; }
+    .tile .body p { display: block; opacity: 1; width: auto; max-width: none; margin-top: 4px; font-size: 13.5px; }
+    .tile .go, .tile .badge { opacity: 1; transform: none; right: 14px; bottom: 50%; translate: 0 50%; }
+    .tile .badge { font-size: 11px; padding: 4px 8px; }
+    .body h2 { font-size: 21px; }
+    footer, .page-end { display: block; height: max(24px, env(safe-area-inset-bottom)); }
   }
-  @media (max-width: 700px) {
-    #today { display: none; }
-    .apps { height: clamp(180px, 30vh, 240px); }
-    .body p { display: none; }
-    h1 { font-size: min(26vw, 14vh); }
+  @media (max-width: 380px) {
+    .tile .art { width: 92px; }
+    .tile .body p { display: none; }
   }
   @media (prefers-reduced-motion: reduce) { .tile, .body p, .go, .badge, .flipper, .next-btn svg { transition: none; } .reader, .reader-panel { animation: none; } }
 </style>
@@ -520,7 +540,7 @@ const arrow = `<svg viewBox="0 0 16 16" fill="none" stroke="#ffffff" stroke-widt
 
 const appsEl = document.getElementById("apps");
 const MIN_TILE = 110;                       // narrowest a tile may get before grouping
-const isTouch = () => matchMedia("(max-width: 700px), (hover: none)").matches;
+const isTouch = () => matchMedia("(max-width: 900px), (hover: none)").matches;
 
 function makeTile(app) {
   const live = !!app.url;
@@ -583,9 +603,21 @@ function render() {
 render();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(render, 120); });
 
+/* Phones: play each card's animation once it scrolls into view */
+(() => {
+  const narrow = matchMedia("(max-width: 900px)");
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (narrow.matches) e.target.classList.toggle("open", e.isIntersecting && e.intersectionRatio > .6); });
+  }, { threshold: [0, .6, 1] });
+  const watch = () => [...appsEl.children].forEach(t => io.observe(t));
+  watch();
+  new MutationObserver(watch).observe(appsEl, { childList: true });
+})();
+
 /* The tile under the mouse (or keyboard focus) expands */
 (() => {
-  const canHover = matchMedia("(hover: hover) and (min-width: 701px)");
+  const canHover = matchMedia("(hover: hover) and (min-width: 901px)");
   const open = t => [...appsEl.children].forEach(x => x.classList.toggle("open", x === t));
   const tileOf = el => el && el.closest && el.closest(".tile");
   appsEl.addEventListener("mouseover", e => { const t = tileOf(e.target); if (t && canHover.matches) open(t); });
@@ -1068,9 +1100,7 @@ const TIPS = [
   }
   function closeReader() { reader.hidden = true; if (lastFocus) lastFocus.focus(); }
   document.getElementById("readerClose").onclick = closeReader;
-  document.getElementById("readerNext").onclick = () => {
-    if (getComputedStyle(tipEl).display === "none") showInReader(pick()); else next();
-  };
+  document.getElementById("readerNext").onclick = () => next();
   reader.addEventListener("click", e => { if (e.target === reader) closeReader(); });
   addEventListener("keydown", e => { if (e.key === "Escape" && !reader.hidden) closeReader(); });
   document.getElementById("tipPill").onclick = () => openReader(Number(faces[current].dataset.index));
@@ -1079,7 +1109,7 @@ const TIPS = [
   function place() {
     tipEl.style.transform = "";
     tipEl.style.height = "";
-    if (getComputedStyle(tipEl).display === "none") return;
+    if (getComputedStyle(tipEl).display === "none" || matchMedia("(max-width: 900px)").matches) return;
     const top = document.getElementById("today").getBoundingClientRect().bottom;
     const bottom = document.getElementById("apps").getBoundingClientRect().top;
     const room = bottom - top;
