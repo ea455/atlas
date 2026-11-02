@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atlas | 2 Costa Rica Real Estate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* 2CRRE brand colors */
+  :root {
+    --green: #7ab942;
+    --teal: #0d505a;
+    --teal-2: #1e4d58;
+    --sage: #6f9096;
+    --grey: #838383;
+    --white: #ffffff;
+    --black: #000000;
+    --serif: "EB Garamond", Garamond, Georgia, serif;
+    --sans: "Poppins", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    height: 100vh; height: 100dvh;
+    overflow: hidden;                      /* everything fits on one screen */
+    background: radial-gradient(120% 100% at 75% 0%, var(--teal), var(--teal-2) 70%);
+    color: var(--white);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column;
+    padding: max(20px, env(safe-area-inset-top)) clamp(20px, 5vw, 64px) max(20px, env(safe-area-inset-bottom));
+    position: relative;
+  }
+  #terrain { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+  body::after { /* darken behind the tiles so they read clearly */
+    content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 45%;
+    background: linear-gradient(to bottom, transparent, rgba(13,40,46,.75));
+    z-index: 0; pointer-events: none;
+  }
+  .topbar, .hero { position: relative; z-index: 1; width: 100%; max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; }
+  .logo { height: clamp(56px, 10vh, 96px); width: auto; display: block; }
+  #today { font-size: 14px; color: #cfe0e2; }
+
+  .hero {
+    flex: 1; min-height: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: clamp(24px, 5vw, 72px);
+    padding: 16px 0 28px;
+  }
+  .hero-text { min-width: 0; }
+
+  /* ---------- Tip of the Day ---------- */
+  .tip {
+    flex: 0 1 clamp(320px, 36vw, 460px);
+    align-self: center;
+    height: min(100%, 400px);
+    perspective: 1600px;
+    position: relative; z-index: 2;
+  }
+  .flipper {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform .9s cubic-bezier(.2,.75,.2,1);
+  }
+  .face {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: clamp(18px, 2.6vh, 26px) clamp(20px, 2vw, 28px);
+    border-radius: 20px;
+    background:
+      linear-gradient(160deg, rgba(122,185,66,.10), transparent 40%),
+      rgba(12, 44, 51, .86);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 30px 60px -28px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06);
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  }
+  .face.back { transform: rotateY(180deg); }
+
+  .tip-head, .tip-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; }
+  .tip-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; font-weight: 600; color: var(--green); letter-spacing: .02em;
+  }
+  .tip-num { font-size: 12px; color: var(--sage); }
+
+  .tip-body { position: relative; flex: 1; min-height: 0; margin: 14px 0 12px; }
+  .tip-body::before { /* large quotation mark */
+    content: "\201C"; position: absolute; left: -4px; top: -18px;
+    font-family: var(--serif); font-size: 72px; line-height: 1; color: rgba(122,185,66,.35);
+    pointer-events: none;
+  }
+  .tip-text {
+    height: 100%; overflow: hidden;
+    padding-top: 22px;
+    font-family: var(--serif); font-size: 22px; line-height: 1.38;
+    color: #f2f6f4; white-space: pre-line;
+  }
+  .face.short .tip-text { display: flex; flex-direction: column; justify-content: center; padding-top: 0; }
+  .face.long .tip-text {
+    -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent);
+            mask-image: linear-gradient(to bottom, #000 72%, transparent);
+  }
+  .tip-source { font-size: 13px; color: #a9c0c3; font-style: italic; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tip-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+  .read-btn {
+    display: none; border: 0; background: none; color: var(--green); cursor: pointer;
+    font: 600 13px var(--sans); padding: 8px 4px;
+  }
+  .face.long .read-btn { display: inline-block; }
+  .read-btn:hover { text-decoration: underline; }
+  .next-btn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06);
+    color: var(--white); font: 500 13px var(--sans);
+    padding: 8px 12px 8px 14px; border-radius: 99px;
+    transition: background .2s ease, border-color .2s ease;
+  }
+  .next-btn svg { width: 14px; height: 14px; transition: transform .5s ease; }
+  .next-btn:hover { background: var(--green); border-color: var(--green); }
+  .next-btn:hover svg { transform: rotate(-180deg); }
+  .next-btn:focus-visible, .read-btn:focus-visible, .icon-btn:focus-visible, .tip-pill:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+  /* Full-tip reader for the long ones */
+  .reader {
+    position: fixed; inset: 0; z-index: 20;
+    display: grid; place-items: center; padding: 24px;
+    background: rgba(6, 26, 30, .62);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    animation: fadeIn .25s ease;
+  }
+  .reader[hidden] { display: none; }
+  .reader-panel {
+    width: min(720px, 100%); max-height: min(88vh, 780px);
+    display: flex; flex-direction: column;
+    padding: 26px 30px; border-radius: 22px;
+    background: linear-gradient(160deg, rgba(122,185,66,.10), transparent 40%), #0f3a42;
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 40px 80px -30px rgba(0,0,0,.8);
+    animation: rise .35s cubic-bezier(.2,.75,.2,1);
+  }
+  .reader-text {
+    flex: 1; min-height: 0; overflow-y: auto; margin: 18px 0 20px; padding-right: 6px;
+    font-family: var(--serif); font-size: clamp(16px, 2.1vh, 19px); line-height: 1.5;
+    color: #f2f6f4; white-space: pre-line;
+    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.2) transparent;
+  }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer;
+    background: rgba(255,255,255,.08); color: var(--white); display: grid; place-items: center;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,.16); }
+  .icon-btn svg { width: 14px; height: 14px; }
+  @keyframes fadeIn { from { opacity: 0; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+
+  .tip-pill {
+    display: none; margin-top: 16px; cursor: pointer;
+    border: 1px solid rgba(122,185,66,.5); background: rgba(122,185,66,.12);
+    color: var(--white); font: 500 13px var(--sans); padding: 8px 14px; border-radius: 99px;
+  }
+  .greeting { margin: 0 0 4px; color: var(--green); font-weight: 500; font-size: clamp(15px, 2.2vh, 19px); }
+  h1 {
+    margin: 0;
+    font-family: var(--serif); font-weight: 400;
+    font-size: min(16vw, 22vh);
+    line-height: .9; letter-spacing: .01em;
+  }
+  /* Title entrance, same as Tech Training: rise in */
+  .hero-enter { opacity: 0; transform: translateY(8px); animation: heroEnter .5s ease-out forwards; }
+  .greeting.hero-enter { animation-delay: 0s; }
+  .sub.hero-enter { animation-delay: .3s; }
+  @keyframes heroEnter { to { opacity: 1; transform: translateY(0); } }
+  /* Blur Text: each letter comes into focus in turn */
+  #atlasTitle span { display: inline-block; opacity: 0; filter: blur(14px); transform: translateY(-.08em);
+    animation: letterFocus .9s ease-out forwards; }
+  #atlasTitle span:nth-child(1) { animation-delay: .10s; }
+  #atlasTitle span:nth-child(2) { animation-delay: .22s; }
+  #atlasTitle span:nth-child(3) { animation-delay: .34s; }
+  #atlasTitle span:nth-child(4) { animation-delay: .46s; }
+  #atlasTitle span:nth-child(5) { animation-delay: .58s; }
+  @keyframes letterFocus { to { opacity: 1; filter: blur(0); transform: none; } }
+  /* Rotating greeting, English and Spanish */
+  .greeting { height: 1.4em; overflow: hidden; perspective: 300px; }
+  .greet-line { display: block; transition: transform .7s cubic-bezier(.2,.75,.2,1), opacity .7s ease; transform-origin: 50% 50%; }
+  .greet-line.out { transform: translateY(-100%) rotateX(60deg); opacity: 0; }
+  .greet-line.in { transition: none; transform: translateY(100%) rotateX(-60deg); opacity: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-enter, #atlasTitle span { animation: none; opacity: 1; filter: none; transform: none; } .greet-line { transition: none; }
+  }
+  .sub { margin: 14px 0 0; font-size: clamp(15px, 2.2vh, 20px); color: #d5e3e4; }
+
+  /* ---------- Tiles ---------- */
+  /* ---------- Slim tiles that expand on hover ---------- */
+  .dock { position: relative; z-index: 1; width: 100%; max-width: 1100px; margin: 0 auto; }
+  .apps {
+    display: flex; gap: clamp(10px, 1.2vw, 14px);
+    height: clamp(210px, 34vh, 320px);
+    overflow: hidden;
+  }
+  .apps::-webkit-scrollbar { display: none; }
+  .tile {
+    position: relative;
+    flex: 1 1 0; min-width: 0;
+    display: flex; flex-direction: column;
+    background: var(--white); color: var(--black);
+    border-radius: 16px; overflow: hidden;
+    text-decoration: none; outline: none;
+    box-shadow: 0 24px 48px -20px rgba(0,0,0,.55);
+    transition: flex-grow .5s cubic-bezier(.22,.8,.25,1);
+  }
+  .tile.open { flex-grow: 3.6; }
+  .body { container-type: inline-size; }
+
+  a.tile:focus-visible { box-shadow: 0 0 0 3px var(--green); }
+
+  .art { flex: 1; min-height: 0; }
+  .art svg { width: 100%; height: 100%; display: block; }
+
+  .body {
+    position: relative;
+    height: clamp(92px, 13vh, 124px);
+    padding: 14px 18px;
+    overflow: hidden;
+  }
+  .kind { display: block; font-size: 11px; font-weight: 500; color: var(--green); margin-bottom: 2px; letter-spacing: .02em; }
+  .body h2 {
+    margin: 0; font-family: var(--serif); font-weight: 500;
+    font-size: clamp(18px, 2.5vh, 24px); line-height: 1.15; color: var(--teal);
+  }
+  .body p {
+    margin: 6px 0 0; width: 250px; max-width: calc(100% - 56px);
+    color: var(--grey); font-size: 13.5px; line-height: 1.45;
+    opacity: 0; transition: opacity .2s ease;
+  }
+  .go, .badge {
+    position: absolute; right: 16px; bottom: 16px;
+    opacity: 0; transform: translateX(-8px);
+    transition: opacity .2s ease, transform .3s ease;
+  }
+  .tile.open .body p, .tile.open .go, .tile.open .badge { opacity: 1; transform: none; transition-delay: .18s; }
+  .go {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--green); display: grid; place-items: center;
+  }
+  .go svg { width: 16px; height: 16px; }
+  .badge { font-size: 12px; font-weight: 500; color: var(--grey); border: 1px solid #d9d9d9; padding: 5px 10px; border-radius: 99px; white-space: nowrap; }
+
+  /* Group tile (e.g. all forms in one tile) */
+  .art { position: relative; }
+  .links {
+    position: absolute; inset: 0; margin: 0; padding: 14px; list-style: none;
+    display: flex; flex-direction: column; justify-content: center; gap: 6px;
+    background: rgba(13,80,90,.94);
+    opacity: 0; pointer-events: none; transition: opacity .25s ease;
+  }
+  .tile.open .links { opacity: 1; pointer-events: auto; transition-delay: .15s; }
+  .links a {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    color: var(--white); text-decoration: none; font-size: 14.5px; font-weight: 500;
+    padding: 9px 12px; border-radius: 10px; background: rgba(255,255,255,.08);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .links a:hover, .links a:focus-visible { background: var(--green); outline: none; }
+  .links a svg { width: 14px; height: 14px; flex: none; }
+  .group .body p { width: 240px; }
+
+  /* Very slim tiles (only when many apps): tighter text */
+  .tile:not(.open) .body { padding-left: clamp(10px, 1.4vw, 18px); padding-right: clamp(8px, 1vw, 18px); }
+  @container (max-width: 110px) {
+    .body h2 { font-size: 15px; }
+    .kind { font-size: 10px; }
+  }
+
+
+  /* ---------- Card illustrations come alive on hover ---------- */
+  .art svg * { transform-box: fill-box; }
+  /* Market Stats: gridlines rise, bars regrow, trend line redraws */
+  .a-vgrid path { transform-origin: 50% 100%; transform: scaleY(0); transition: transform .5s ease; }
+  .a-bars rect { transform-origin: 50% 100%; }
+  .a-line { stroke-dasharray: 1 2; stroke-dashoffset: 0; }
+  .a-dot { transform-origin: center; }
+  /* Marketing: extra wave hidden at rest */
+  .a-w3 { opacity: 0; }
+  .a-horn { transform-origin: 30% 50%; }
+  /* IT: gear */
+  .a-gear { transform-origin: center; }
+  /* SOPs: third check hidden at rest */
+  .a-c1, .a-c2, .a-c3 { stroke-dasharray: 1 2; }
+  .a-c3 { stroke-dashoffset: 1.1; }
+  /* Training */
+  .a-prog { transform-origin: 0 50%; transform: scaleX(.575); }
+  .a-play { transform-origin: center; }
+  /* Exclusive */
+  .a-star { transform-origin: center; }
+  .a-roof { stroke-dasharray: 1 2; }
+
+  .tile:is(:hover, .open, :focus-visible) .a-vgrid path { transform: scaleY(1); }
+  .tile:is(:hover, .open, :focus-visible) .a-vgrid path:nth-child(2) { transition-delay: .05s; }
+  .tile:is(:hover, .open, :focus-visible) .a-vgrid path:nth-child(3) { transition-delay: .1s; }
+  .tile:is(:hover, .open, :focus-visible) .a-vgrid path:nth-child(4) { transition-delay: .15s; }
+  .tile:is(:hover, .open, :focus-visible) .a-vgrid path:nth-child(5) { transition-delay: .2s; }
+  .tile:is(:hover, .open, :focus-visible) .a-vgrid path:nth-child(6) { transition-delay: .25s; }
+  .tile:is(:hover, .open, :focus-visible) .a-bars rect { animation: barGrow .7s cubic-bezier(.3,1.3,.5,1) both; }
+  .tile:is(:hover, .open, :focus-visible) .a-bars rect:nth-child(2) { animation-delay: .07s; }
+  .tile:is(:hover, .open, :focus-visible) .a-bars rect:nth-child(3) { animation-delay: .14s; }
+  .tile:is(:hover, .open, :focus-visible) .a-bars rect:nth-child(4) { animation-delay: .21s; }
+  .tile:is(:hover, .open, :focus-visible) .a-bars rect:nth-child(5) { animation-delay: .28s; }
+  .tile:is(:hover, .open, :focus-visible) .a-bars rect:nth-child(6) { animation-delay: .35s; }
+  .tile:is(:hover, .open, :focus-visible) .a-line { animation: lineDraw 1s ease-out .15s both; }
+  .tile:is(:hover, .open, :focus-visible) .a-dot { animation: dotPop .4s cubic-bezier(.3,1.6,.5,1) 1.05s both; }
+  @keyframes barGrow { from { transform: scaleY(.15); } to { transform: scaleY(1); } }
+  @keyframes lineDraw { from { stroke-dashoffset: 1.1; } to { stroke-dashoffset: 0; } }
+  @keyframes dotPop { from { transform: scale(0); } to { transform: scale(1); } }
+
+  .tile:is(:hover, .open, :focus-visible) .a-horn { animation: horn 1.2s ease-in-out infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-w1 { animation: wave 1.2s ease-out infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-w2 { animation: wave 1.2s ease-out .2s infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-w3 { animation: wave 1.2s ease-out .4s infinite; }
+  @keyframes horn { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(-4deg); } 30% { transform: rotate(0); } }
+  @keyframes wave { 0% { opacity: 0; transform: translateX(-6px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateX(8px); } }
+
+  .tile:is(:hover, .open, :focus-visible) .a-gear { animation: spin 3s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tile:is(:hover, .open, :focus-visible) .a-c1 { animation: tick1 3.2s ease-in-out infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-c2 { animation: tick2 3.2s ease-in-out infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-c3 { animation: tick3 3.2s ease-in-out infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-b3 { animation: box3 3.2s ease-in-out infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-l3 { animation: line3 3.2s ease-in-out infinite; }
+  @keyframes tick3 { 0%, 8% { stroke-dashoffset: 1.1; } 20%, 60% { stroke-dashoffset: 0; } 72%, 100% { stroke-dashoffset: 1.1; } }
+  @keyframes box3 { 0%, 8% { stroke: #838383; } 20%, 60% { stroke: #7ab942; } 72%, 100% { stroke: #838383; } }
+  @keyframes line3 { 0%, 8% { fill: #d9d9d9; } 20%, 60% { fill: #6f9096; } 72%, 100% { fill: #d9d9d9; } }
+  @keyframes tick1 { 0%, 30% { stroke-dashoffset: 0; } 40%, 50% { stroke-dashoffset: 1.1; } 62%, 100% { stroke-dashoffset: 0; } }
+  @keyframes tick2 { 0%, 45% { stroke-dashoffset: 0; } 55%, 70% { stroke-dashoffset: 1.1; } 82%, 100% { stroke-dashoffset: 0; } }
+
+  .tile:is(:hover, .open, :focus-visible) .a-prog { animation: prog 2.4s ease-in-out infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-play { animation: pulse 1.2s ease-in-out infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-p1 { transform: translate(4px, -3px); }
+  .tile:is(:hover, .open, :focus-visible) .a-p2 { transform: translate(8px, -6px); }
+  .a-p1, .a-p2 { transition: transform .4s ease; }
+  @keyframes prog { 0% { transform: scaleX(.575); } 70% { transform: scaleX(1); } 100% { transform: scaleX(1); } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+  .tile:is(:hover, .open, :focus-visible) .a-star { animation: starSpin .9s cubic-bezier(.3,1.4,.5,1) both, bob 2s ease-in-out .9s infinite; }
+  .tile:is(:hover, .open, :focus-visible) .a-roof { animation: lineDraw .8s ease-out both; }
+  @keyframes starSpin { from { transform: rotate(-200deg) scale(.4); } to { transform: rotate(0) scale(1); } }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+  .a-f1, .a-f2 { transition: transform .45s cubic-bezier(.3,1.3,.5,1); transform-origin: 0 100%; }
+  .tile:is(:hover, .open, :focus-visible) .a-f1 { transform: rotate(6deg) translateX(6px); }
+  .tile:is(:hover, .open, :focus-visible) .a-f2 { transform: rotate(12deg) translateX(12px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .art svg * { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-height: 720px) { .body p { display: none; } }
+
+  /* Phones and touch screens: normal-width cards you swipe through */
+  @media (max-width: 700px), (hover: none) {
+    .tile { flex: 0 0 min(72vw, 300px); }
+    .tile .body p, .tile .go, .tile .badge, .tile .links { opacity: 1; transform: none; pointer-events: auto; }
+  }
+  @media (max-width: 900px) {
+    .tip { display: none; }
+    .tip-pill { display: inline-block; }
+  }
+  @media (max-width: 700px) {
+    #today { display: none; }
+    .apps { height: clamp(180px, 30vh, 240px); }
+    .body p { display: none; }
+    h1 { font-size: min(26vw, 14vh); }
+  }
+  @media (prefers-reduced-motion: reduce) { .tile, .body p, .go, .badge, .flipper, .next-btn svg { transition: none; } .reader, .reader-panel { animation: none; } }
+</style>
+</head>
+<body>
+<canvas id="terrain" aria-hidden="true"></canvas>
+
+<header class="topbar">
+  <img class="logo" alt="2 Costa Rica Real Estate" src="data:image/png;base64,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">
+  <div id="today"></div>
+</header>
+
+<section class="hero">
+  <div class="hero-text">
+    <p class="greeting hero-enter" aria-live="off"><span class="greet-line" id="greeting">Welcome</span></p>
+    <h1 id="atlasTitle" aria-label="Atlas"><span aria-hidden="true">A</span><span aria-hidden="true">t</span><span aria-hidden="true">l</span><span aria-hidden="true">a</span><span aria-hidden="true">s</span></h1>
+    <p class="sub hero-enter">Every tool the team uses, in one place.</p>
+    <button class="tip-pill" id="tipPill" type="button">Tip of the Day <span aria-hidden="true">→</span></button>
+  </div>
+
+  <aside class="tip" id="tip" aria-label="Tip of the Day">
+    <div class="flipper" id="flipper">
+      <article class="face front"></article>
+      <article class="face back" aria-hidden="true"></article>
+    </div>
+  </aside>
+</section>
+
+<div class="reader" id="reader" hidden>
+  <div class="reader-panel" role="dialog" aria-modal="true" aria-labelledby="readerLabel">
+    <div class="tip-head">
+      <span class="tip-label" id="readerLabel">Tip of the Day</span>
+      <button class="icon-btn" id="readerClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="reader-text" id="readerText"></div>
+    <div class="tip-foot">
+      <span class="tip-source" id="readerSource"></span>
+      <button class="next-btn" id="readerNext" type="button">Next tip
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5V5h-2.5"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="dock">
+  <main class="apps" id="apps" aria-label="Apps and forms"></main>
+</div>
+
+<script>
+/* =========================================================
+   APPS. This is the only part you need to edit.
+   - url: the app's web address (null = "Coming soon")
+   - art: picture on the tile ("chart", "training", "exclusive",
+          "marketing", "it", "checklist", or "forms")
+   - group: optional. When there are too many tiles to fit in one row,
+          tiles with the same group automatically merge into one tile.
+   ========================================================= */
+const APPS = [
+  { name: "Market Stats",  kind: "App", description: "Market statistics, charts and analysis from OMNI MLS data.", url: "https://ea455.github.io/market-stats/", art: "chart" },
+  { name: "Tech Training", kind: "App", description: "Learn the tools and systems the team works with.",          url: "https://ea455.github.io/2crre-hub/",    art: "training" },
+  { name: "New Exclusive Marketing", kind: "Form", group: "Forms", description: "Let the Marketing Team know about your new exclusive so it’s properly marketed from day one.", url: "https://form.asana.com/?k=qesLYmaCggs0IGvSmLTdwg&d=1110210665616575", art: "exclusive", newTab: true },
+  { name: "Marketing Task", kind: "Form", group: "Forms", description: "Ask the marketing team for anything else you need.", url: "https://form.asana.com/?k=T1KLUHrdF4fwMehm1zUk0g&d=1110210665616575", art: "marketing", newTab: true },
+  { name: "IT Task", kind: "Form", group: "Forms", description: "Report a tech problem or request IT help.", url: "https://form.asana.com/?k=-jHUQH1ReqR1wbn2qq9TTw&d=1110210665616575", art: "it", newTab: true },
+  { name: "SOPs", kind: "Guide", description: "Step-by-step procedures for how the brokerage runs.", url: null, art: "checklist" }
+];
+
+/* Group tiles, used only when there isn't room for every tile */
+const GROUPS = {
+  Forms: { kind: "Asana forms", description: "Send a request to the marketing or IT team.", art: "forms" }
+};
+
+const ART = {
+  forms: `<svg viewBox="-30 -28 380 206" preserveAspectRatio="xMidYMid slice">
+      <g transform="translate(112 18)">
+        <rect class="a-f2" x="24" y="0" width="76" height="96" rx="7" fill="#6f9096"/>
+        <rect class="a-f1" x="12" y="8" width="76" height="96" rx="7" fill="#a9c0c3"/>
+        <rect x="0" y="16" width="76" height="96" rx="7" fill="#ffffff"/>
+        <rect x="12" y="32" width="52" height="7" rx="3.5" fill="#0d505a"/>
+        <rect x="12" y="50" width="40" height="6" rx="3" fill="#cfdadb"/>
+        <rect x="12" y="64" width="46" height="6" rx="3" fill="#cfdadb"/>
+        <rect x="12" y="88" width="30" height="12" rx="6" fill="#7ab942"/>
+      </g></svg>`,
+  exclusive: `<svg viewBox="-30 -28 380 206" preserveAspectRatio="xMidYMid slice">
+      <g transform="translate(110 20)" fill="none" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+        <path class="a-roof" pathLength="1" d="M10 52 L50 18 L90 52"/><path d="M20 44 V104 H80 V44"/><path d="M42 104 V76 H58 V104"/>
+      </g>
+      <g transform="translate(196 36)"><g class="a-star"><circle r="22" fill="#7ab942"/>
+        <path d="M0 -12 L3.5 -4 L12 -3.5 L5.5 2.5 L7.5 11 L0 6.5 L-7.5 11 L-5.5 2.5 L-12 -3.5 L-3.5 -4 Z" fill="#ffffff"/></g></g></svg>`,
+  marketing: `<svg viewBox="-30 -28 380 206" preserveAspectRatio="xMidYMid slice">
+      <g transform="translate(108 34)" stroke-linejoin="round" stroke-linecap="round">
+        <g class="a-horn"><path d="M14 30 H34 L80 6 V86 L34 62 H14 Z" fill="#ffffff"/>
+        <path d="M30 62 L38 92 H52 L46 62" fill="#ffffff"/></g>
+        <path class="a-w1" d="M92 30 Q102 46 92 62" fill="none" stroke="#ffffff" stroke-width="4"/>
+        <path class="a-w2" d="M100 20 Q118 46 100 72" fill="none" stroke="#ffffff" stroke-width="4" opacity=".7"/>
+        <path class="a-w3" d="M108 10 Q134 46 108 82" fill="none" stroke="#ffffff" stroke-width="4"/></g></svg>`,
+  it: `<svg viewBox="-30 -28 380 206" preserveAspectRatio="xMidYMid slice">
+      <g transform="translate(96 28)">
+        <rect x="14" y="0" width="100" height="68" rx="6" fill="#0d505a"/>
+        <rect x="22" y="8" width="84" height="52" rx="2" fill="#6f9096"/>
+        <path d="M0 76 H128 L120 86 H8 Z" fill="#1e4d58"/>
+        <g transform="translate(64 34)"><g class="a-gear"><circle r="14" fill="#7ab942"/><circle r="5" fill="#6f9096"/>
+          <g stroke="#7ab942" stroke-width="5" stroke-linecap="round"><path d="M0 -19V-15M0 15V19M-19 0H-15M15 0H19M-13 -13l3 3M10 10l3 3M-13 13l3-3M10 -10l3-3"/></g></g></g>
+      </g></svg>`,
+  chart: `<svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid slice">
+      <rect width="320" height="150" fill="#0d505a"/>
+      <path d="M0 40H320M0 80H320M0 120H320" stroke="#6f9096" stroke-opacity=".35"/>
+      <g class="a-vgrid" stroke="#6f9096" stroke-opacity=".35"><path d="M60 0V150"/><path d="M100 0V150"/><path d="M140 0V150"/><path d="M180 0V150"/><path d="M220 0V150"/><path d="M260 0V150"/></g>
+      <g class="a-bars" fill="#6f9096" fill-opacity=".55">
+        <rect x="40" y="96" width="22" height="60" rx="3"/><rect x="80" y="78" width="22" height="78" rx="3"/>
+        <rect x="120" y="88" width="22" height="68" rx="3"/><rect x="160" y="60" width="22" height="96" rx="3"/>
+        <rect x="200" y="68" width="22" height="88" rx="3"/><rect x="240" y="42" width="22" height="114" rx="3"/>
+      </g>
+      <path class="a-line" pathLength="1" d="M30 110 L71 90 L111 98 L151 72 L191 78 L231 52 L290 32" fill="none" stroke="#7ab942" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle class="a-dot" cx="290" cy="32" r="6" fill="#7ab942"/></svg>`,
+  training: `<svg viewBox="-30 -28 380 206" preserveAspectRatio="xMidYMid slice">
+      <rect width="320" height="150" fill="#6f9096"/>
+      <g transform="translate(96 22)">
+        <rect class="a-p2" x="18" y="-6" width="120" height="100" rx="8" fill="#1e4d58" fill-opacity=".35"/>
+        <rect class="a-p1" x="9" y="3" width="120" height="100" rx="8" fill="#ffffff" fill-opacity=".55"/>
+        <rect x="0" y="12" width="120" height="100" rx="8" fill="#ffffff"/>
+        <g class="a-play"><circle cx="60" cy="54" r="20" fill="#0d505a"/>
+        <path d="M54 44 L70 54 L54 64 Z" fill="#ffffff"/></g>
+        <rect x="20" y="88" width="80" height="6" rx="3" fill="#d9e2e3"/>
+        <rect class="a-prog" x="20" y="88" width="80" height="6" rx="3" fill="#7ab942"/>
+      </g></svg>`,
+  checklist: `<svg viewBox="-30 -28 380 206" preserveAspectRatio="xMidYMid slice">
+      <rect width="320" height="150" fill="#e9eeef"/>
+      <g transform="translate(96 16)">
+        <rect width="128" height="118" rx="10" fill="#fff"/>
+        <g fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="18" y="20" width="16" height="16" rx="4" stroke="#7ab942"/><path class="a-c1" pathLength="1" d="M22 28l3 3 6-7" stroke="#7ab942"/>
+          <rect x="18" y="51" width="16" height="16" rx="4" stroke="#7ab942"/><path class="a-c2" pathLength="1" d="M22 59l3 3 6-7" stroke="#7ab942"/>
+          <rect class="a-b3" x="18" y="82" width="16" height="16" rx="4" stroke="#838383"/><path class="a-c3" pathLength="1" d="M22 90l3 3 6-7" stroke="#7ab942"/>
+        </g>
+        <rect x="44" y="25" width="62" height="6" rx="3" fill="#6f9096"/>
+        <rect x="44" y="56" width="50" height="6" rx="3" fill="#6f9096"/>
+        <rect class="a-l3" x="44" y="87" width="58" height="6" rx="3" fill="#d9d9d9"/>
+      </g></svg>`
+};
+const ART_BG = { forms: "#1e4d58", chart: "#0d505a", training: "#6f9096", exclusive: "#1e4d58", marketing: "#7ab942", it: "#e9eeef", checklist: "#e9eeef" };
+const arrow = `<svg viewBox="0 0 16 16" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>`;
+
+const appsEl = document.getElementById("apps");
+const MIN_TILE = 110;                       // narrowest a tile may get before grouping
+const isTouch = () => matchMedia("(max-width: 700px), (hover: none)").matches;
+
+function makeTile(app) {
+  const live = !!app.url;
+  const tile = document.createElement(live ? "a" : "div");
+  tile.className = "tile";
+  if (live) { tile.href = app.url; if (app.newTab) { tile.target = "_blank"; tile.rel = "noopener"; } }
+  tile.innerHTML = `
+    <div class="art" style="background:${ART_BG[app.art] || '#e9eeef'}">${ART[app.art] || ""}</div>
+    <div class="body">
+      <div><span class="kind"></span><h2></h2><p></p></div>
+      ${live ? `<span class="go" aria-hidden="true">${arrow}</span>` : `<span class="badge">Coming soon</span>`}
+    </div>`;
+  tile.querySelector(".kind").textContent = app.kind || "";
+  tile.querySelector("h2").textContent = app.name;
+  tile.querySelector("p").textContent = app.description || "";
+  return tile;
+}
+
+function makeGroupTile(name, items) {
+  const g = GROUPS[name] || {};
+  const tile = document.createElement("div");
+  tile.className = "tile group";
+  tile.tabIndex = 0;
+  tile.innerHTML = `
+    <div class="art" style="background:${ART_BG[g.art] || '#1e4d58'}">${ART[g.art] || ""}<ul class="links"></ul></div>
+    <div class="body"><div><span class="kind"></span><h2></h2><p></p></div></div>`;
+  tile.querySelector(".kind").textContent = `${items.length} ${g.kind || "items"}`;
+  tile.querySelector("h2").textContent = name;
+  tile.querySelector("p").textContent = g.description || "";
+  const ul = tile.querySelector(".links");
+  items.forEach(app => {
+    const li = document.createElement("li"), a = document.createElement("a");
+    a.textContent = app.name;
+    a.insertAdjacentHTML("beforeend", arrow);
+    if (app.url) { a.href = app.url; if (app.newTab) { a.target = "_blank"; a.rel = "noopener"; } }
+    li.appendChild(a); ul.appendChild(li);
+  });
+  return tile;
+}
+
+let mode = null;
+function render() {
+  const gap = parseFloat(getComputedStyle(appsEl).columnGap) || 12;
+  const fits = Math.floor((appsEl.clientWidth + gap) / (MIN_TILE + gap));
+  const grouped = !isTouch() && APPS.length > fits;
+  if (grouped === mode) return;
+  mode = grouped;
+  appsEl.innerHTML = "";
+  const done = new Set();
+  APPS.forEach(app => {
+    if (grouped && app.group) {
+      if (done.has(app.group)) return;
+      done.add(app.group);
+      appsEl.appendChild(makeGroupTile(app.group, APPS.filter(x => x.group === app.group)));
+    } else {
+      appsEl.appendChild(makeTile(app));
+    }
+  });
+}
+render();
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+
+/* The tile under the mouse (or keyboard focus) expands */
+(() => {
+  const canHover = matchMedia("(hover: hover) and (min-width: 701px)");
+  const open = t => [...appsEl.children].forEach(x => x.classList.toggle("open", x === t));
+  const tileOf = el => el && el.closest && el.closest(".tile");
+  appsEl.addEventListener("mouseover", e => { const t = tileOf(e.target); if (t && canHover.matches) open(t); });
+  appsEl.addEventListener("focusin", e => { const t = tileOf(e.target); if (t && canHover.matches) open(t); });
+  appsEl.addEventListener("mouseleave", () => open(null));
+  appsEl.addEventListener("focusout", e => { if (!appsEl.contains(e.relatedTarget)) open(null); });
+})();
+
+
+/* =========================================================
+   TIPS OF THE DAY. To add a tip, add a line here:
+   { text: "The tip...", source: "Optional author" }
+   ========================================================= */
+const TIPS = [
+{
+"text": "As times of uncertainty loom, the shortest path to a transaction is likely sitting right in front of you. Reach out to current and past clients, unsolicited, to check in on them. Give them a market report. With sellers, talk about the market and the importance of pricing to sell. With buyers, talk about this being a buyer’s market and their opportunity to secure a property now at the best price in years. And yes, you knew I could not forget to remind you to check your daily digest. How many of you receive the digest and simply erase the email, assuming those active clients are going to call you? Click on your clients, see what they are looking at and why, and pick up the phone to provide valuable service and insights. GO."
+},
+{
+"text": "Handwritten notes. If you are looking for a way to stand out with clients, think about spending a little money on some personalized envelopes and stationery (happy to help you brand them). Write a handwritten note and send it to a client to congratulate them on the purchase of their home, on their children’s graduation from high school or college, or a condolence note if you saw on Facebook that a loved one passed away. Handwritten notes are remembered, and they achieve a 98% open rate. Stand out in the crowd, build relationships that will last, and always be the trusted advisor to your clients."
+},
+{
+"text": "Communication is the tip of the hour, day, month and year. Every Monday morning you should have an alert in your calendar that I placed there that says “Exclusive Seller Update.” How many of you are reaching out to your sellers once a week? Market updates, trends, good news, bad news, no news. You are their eyes, ears and mind on the ground, and the more silence you keep, the more distance you create."
+},
+{
+"text": "Focus on the solution, not the problem. When you are in a transaction or negotiation that is going sideways, you must stop, put your emotions or frustrations aside, and be the calm in the storm. Find and propose solutions, and bring the focus away from why there is a problem and toward how you plan to solve it."
+},
+{
+"text": "Buyers and sellers get cold feet when they lose focus on the outcome. The ups and downs of the process make them forget why they started having the conversation with you in the first place. So tell them: “Remember when…” Instead of getting angry or frustrated, simply and calmly remind them: “Remember when you first reached out and told me you and your wife wanted to sell so that you could spend more time with your grandkids?” “Remember when you told me that you had always dreamed of owning a place at the beach in Costa Rica?” A calm and direct reminder of their motivation will often bring their focus back to where it needs to be, and away from the drama at hand.",
+"source": "Ryan Serhant"
+},
+{
+"text": "Speed to lead wins in real estate. The first agent who calls with confidence and clarity sets the tone. Call fast. Pre-frame the appointment. Confirm expectations. The agent who controls the conversation controls the opportunity. The fear of a call, and relying on email or WhatsApp, puts you in second place to the one who dares to meet the client. Where do you think you have the best chance to create a relationship? In an intelligent dialogue where you transmit your added value, or in a canned email asking the buyer to call you?"
+},
+{
+"text": "According to the Zillow report for 2026, 55% of all buyers are repeat buyers. Before I get to the next piece of data, let that sink in. Where are those buyers today? In your CRM, I hope, receiving our newsletters and saved searches, following you on social media, and hopefully hearing from you once in a while. 79% of all buyers say they would use the same agent again, but only 13% of them actually do. Why? Because most agents fail to stay in touch, maintain the relationship and add value. 47% of all buyers and 59% of sellers hire the first agent they contact. Speed to lead, once again. Responding tomorrow, or later tonight, is too late, as your client is probably no longer your client."
+},
+{
+"text": "Data currently shows the top AI search for buyers in Costa Rica is about whether they are getting a good deal. Here is what buyers ask AI: “Is $X a fair price for this property?” “How do I know if I’m overpaying?” “What are comparable values in this area?” “Is this market overpriced right now?”\n\nWhat this means: buyers are trying to protect themselves from making a mistake.\n\nHow you should prepare: be ready with clear, data-backed comps (not opinions). Explain price drivers (location, rental potential, views, infrastructure, HOA, etc.). Acknowledge when something is not a great deal; this builds immediate trust.\n\nPositioning shift: from salesperson to market interpreter. If you are not educating your clients, they assume AI is a better source for that education. Provide the data and information before the client looks for it or questions you, and position yourself as the expert."
+},
+{
+"text": "This one is not about the property, it is about YOU. These are a few of the topics clients are currently asking AI about: “How do I know if a real estate agent is trustworthy?” “What are red flags when buying property abroad?” “Is this developer reputable?” “How do commissions work in Costa Rica?”\n\nWhat this means: they are pre-screening you before they even speak to you.\n\nHow to prepare: lead with transparency (fees, process, representation). Clearly explain who you represent and how you get paid. Provide a track record, not just claims. Be proactive about risks (legal, construction, timelines).\n\nPositioning shift: from trusted by default to trust that must be proven quickly. Never think that clients just randomly searched and found you. They are interviewing you with every word spoken. Before you call them a dead lead, ask yourself: how can I demonstrate my value to them in this call, email or exchange, so that they know I am trustworthy? Provide market insight and the inside track to opportunity. Do not brag about your experience, but use it to leverage the relationship, making yourself invaluable to their transaction."
+},
+{
+"text": "“Is now the right time to buy?” What buyers ask AI: “Should I wait?” “Is the market going up or down?” “Are prices going to drop?” “Does this increased inventory and time on market favor me, or is it going to get worse?”\n\nWhat this means: they are hesitating and looking for timing validation.\n\nHow to prepare: avoid predicting the market. Instead, focus on buying criteria. Explain long-term vs. short-term decisions. Use historical patterns, not speculation. Provide real comps BEFORE the client asks for them; if you wait, you will be on the defensive. Tell them: “I know you might be considering whether now is the best time. The question is, can you afford to wait? Let me share with you why this property is unique.” Use comps in the CRM, ask for our assistance with OMNI data, and show your value."
+},
+{
+"text": "Your words matter. Replace “I think” with “The data shows.” Replace “hopefully” with “Here’s the plan.” Language shapes perception.",
+"source": "Tom Ferry"
+},
+{
+"text": "You cannot fake expertise. Study your inventory daily. Know price per square foot. Know trends. Knowledge fuels authority.",
+"source": "Tom Ferry"
+},
+{
+"text": "How should I price my property? What sellers ask AI: “What is my property worth?” “Is my agent trying to price low to sell fast, and am I leaving money on the table?” “How do I price in a slow market?” “Should I price high and negotiate?” “Are prices dropping?”\n\nWhat this means: they are trying to avoid leaving money on the table, and to avoid chasing the market down.\n\nWhere agents lose credibility: giving a single number without context, overpricing to “win the listing,” and avoiding difficult conversations.\n\nHow to prepare: position pricing as a strategy, not a number. “In today’s market, pricing is about positioning your property relative to current competition, not just what it’s worth in isolation.” Be ready to explain competitive inventory, buyer behavior and absorption rate (even if informally). Sellers want logic, not optimism. As I always say, uncomfortable conversations will be less uncomfortable if you have them today, as opposed to six months from now, when the seller questions why you did not dare to speak when you took the listing."
+},
+{
+"text": "A softer market rewards consistency and value. The top agents are building daily habits to set themselves apart from the crowd. They reach out to sellers before a seller asks. They use market stats to educate sellers and buyers, so when the two align, a deal happens. The elite agents use consistency to add value to the sphere of influence that trusts them: market updates, market stats, perceptions and trends. The best agents attract buyers and sellers who would not want to go through the process WITHOUT them.\n\nWhen you speak with a buyer or a seller, you should believe that you add irreplaceable value. They will sense that, and you will succeed. If you transmit hesitation, fear or uncertainty, they will sense that too, and you will wonder why you lost the listing, or why the client ended up working with another agent. When that lead comes in and you are hesitating between calling and the “trusty canned email response,” remember that some agent out there is going to exude that confidence and not think twice. Do not fear success; embrace the uncomfortable. The market is what you make of it: go make it yours."
+},
+{
+"text": "In a world where AI is making clients more informed, or at the very least giving them the perception of being experts, this shift actually sharpens positioning for high-level agents, especially in luxury markets like ours. The agents who win will interpret, not just provide, information. They will challenge AI-driven assumptions with local nuance, guide decision-making instead of defending listings, and build trust before the property is introduced."
+},
+{
+"text": "Real estate is about trust and relationships. This week, I challenge you each to follow 10 new people in your community on social media: restaurant owners, tour operators, property managers, coffee shop owners, wellness coaches, doctors, interior designers, anyone connected to the area you serve. Every time one of them follows you back, send a personal message to introduce yourself and what you do, tell them what you love about what they are doing, and show genuine interest in their business. If they respond, call them and set up a breakfast or coffee to get to know each other. This opens business from a new source who has friends, family and a sphere of influence, and you will have earned their trust to refer business to you.",
+"source": "Ryan Serhant"
+},
+{
+"text": "The way your clients search for real estate is rapidly changing. According to the most recent data, 70% of all searches are influenced in some way by artificial intelligence. The client might start on Google and find a listing, but then they ask conversational questions: Is this listing overpriced? Who is the most reputable agent in the area? Here is the kicker: the agent, not the listing, is becoming the entry point. 71% of buyers choose agents based on social presence. Read that again. Buyers ask AI “Who is the best agent in X area?”, not “Show me listings in X.” The agent brand is replacing the listing as the primary gateway.\n\nI recently had a long series of conversations with a very high-level client. I told him that once I understood his desired area, I would introduce him to his advisor so they could get started. In the past, the only thing a client would ask was when to expect the listings. His first question was: which advisor are you recommending, so I can start following him or her on social media? If you are not using your social networks to present your personal brand, authenticity, personality and added value, today’s market will create unique challenges."
+},
+{
+"text": "By the time a lead reaches out to you, they have already researched the market, already compared and contacted other agents, and already formed opinions that they will confirm or discard based on your response. What will make them choose you? Your first response needs to be insightful and tailored to the client.\n\nInstead of “Thanks for your interest in the XYZ area. I am an expert and look forward to helping; let me know a good time to speak,” try this. FIRST, pick up the phone and call. Second, and only if they do not answer or it is not a good time, send something that shows your authority and provides real value: “Great to see you are interested in the XYZ market. As we shift from a seller’s market to a buyer’s market, we have seen an X% increase in home sales in XYZ over the same period last year, yet there is still plenty of inventory, which means you will have a strong opportunity to negotiate price and terms. Given the data, this trend is likely to change as we move into the summer months. I am happy to share more insights so you enter the market with all the knowledge you need, and I look forward to putting my X years in this market to work for you as a trusted advisor.” This is just an example, but add VALUE, not SALES."
+},
+{
+"text": "Referrals don’t just happen; they’re the result of relationships you’ve been quietly investing in all along. Stay on your clients’ radar in a way that genuinely serves them. Drop a handwritten note. Share a helpful market update. Cheer them on when something good happens in their lives. These things matter more than you might think. And when the moment feels right, ask the kind of questions that turn a great conversation into a warm introduction. The agents who consistently grow their referral business aren’t working harder; they’re staying connected longer, even when others drift away. Start building that habit now. The season will reward the agents who already have something in motion, not those waiting for the phone to ring. That’s the difference between a business built on momentum and one built on hope."
+},
+{
+"text": "Change is not accidental. When you want to up your game, reach a new financial or personal goal, or alter the trajectory of your success, it is the result of intentional habits. What are you doing to rise to the challenge? Establish authority. Build lasting relationships. Don’t sit and wait; go out and make it happen. You get cramps on the sidelines. Get out and play!"
+},
+{
+"text": "We do not learn from what we did right. When a deal falls apart or almost falls apart, or a seller or buyer loses trust or confidence, treat that moment as a reminder of how delicate each transaction is. You have to earn the right to be in the room, and when you stumble, learn from the misstep and take real steps to ensure your next transaction benefits from your previous mistakes."
+},
+{
+"text": "Clients respond to what they feel from you before you ever speak. Not your pitch. Your presence. When a client walks into a room with you, what do they feel? Clarity? Confidence? Trust? Because in this next era, the advisors who win won’t chase. They’ll be the ones clients naturally follow.",
+"source": "CEO of REALM"
+},
+{
+"text": "Industry data states that 7% of the people in your CRM will transact every year, with or without you. So instead of focusing solely on when and where your new leads will come from, remember that there are leads sitting in your lap. You need to engage, nourish, provide value and strengthen those relationships to ensure that as much of that 7% as possible transacts with you, and not with someone else whose CRM they probably sit in as well."
+},
+{
+"text": "Mindset is everything in real estate. Eliminate the noise, and do not spend your time around people who are negative. In challenging markets, only YOU can move your business. Stop making excuses and start finding opportunities.",
+"source": "Coach Ken"
+},
+{
+"text": "Consumers no longer trust visibility. They trust authority. Today’s move: ask yourself, “Where am I visible, but not authoritative?” Then fix it. Because the market no longer rewards exposure. It rewards conviction.",
+"source": "CEO of REALM"
+},
+{
+"text": "Do not be a secret agent. Everyone should know you work in real estate: through social media, newsletters and saved searches, at neighborhood gatherings, school events and social activities. Everyone is a potential client, and the more often your name comes up, the more likely you are to be considered. Take a tip from real estate legend Diane Turton, who pages herself at the airport every time she travels. We laugh, but it works!"
+},
+{
+"text": "How you start your morning sets the tone for the entire day. Be focused. Be intentional. Start with the activities that build presence and pipeline. No social media scrolling. Control the first hour and you control the results. Once the noise starts, the distractions do not allow the same focus. Your mornings should be sacred; they are a key to your success."
+},
+{
+"text": "Before asking why you are not closing more deals, or what is going on in the market, look in the mirror and ask what you are doing to control your success. Not louder. Not luckier. Just more consistent, more prepared, more intentional. We speak often about the small things, the daily habits that take agents from good to great: reaching out to 5 new people in your community on social media, adding value for clients on social media, sharing knowledge with current buyers and sellers. Build habits quietly that make noise down the road."
+},
+{
+"text": "If you are too big to do the small things, you will always be too small to do the big things. What are the small things? Using your CRM. Setting tasks to reach out to sellers once a week. Setting tasks to reach out to buyers with valuable market insight. Posting insights on social media. Connecting with people in your community and maintaining your presence and relevance. Sending a thank-you note to the seller or buyer, and to the attorneys who represented either side. Your success depends not only on the big steps, but more likely on a combination of the small ones."
+},
+{
+"text": "There is no easy way, no shortcut, no magic formula. Your success is in your hands, and every morning you should ask yourself: what can I do today to give myself a better shot at success?"
+},
+{
+"text": "Most agents, not just here but globally, have a cemetery of leads sitting in their CRM. Fortunately for us, in real estate it is possible to bring back the dead. Go wake them up by providing value, communication and consistency."
+},
+{
+"text": "Be a Scout. What is their motto? Be prepared. When you go into a listing appointment, you need to know your market data: the neighborhood, comps, positives and negatives, liquidity or lack thereof, BEFORE you go. Speak with knowledge and listen, but when asked a question, command the room by transmitting trust, knowledge and unparalleled expertise. If you are meeting a buyer who asks about values or liquidity in a community, be prepared. I can assure you that your clients are prepared. They have done their research and will be testing you at every corner. If you are not putting in the time, your chances of losing the listing or the buyer will skyrocket as you become irrelevant to them. When you are prepared, you have earned the right to be in the room."
+},
+{
+"text": "How many of you find yourselves saying: “I sent an email to that lead and nothing. It’s not a good lead”? Be honest. Now ask yourself: what value does a canned email, telling the client where you work and how long you have been in the business, actually provide? Phone call first. Email or WhatsApp second. If you get them on a call, listen. If you have to send an email, ask yourself: if I were buying in this area, what would convince me that I cannot transact without this particular agent? If you are not providing that, the client will likely say: next."
+},
+{
+"text": "Why emotional intelligence matters more than ever. As information becomes increasingly accessible through AI and online platforms, the differentiator is shifting from “who has the information” to “who can guide people emotionally through complex decisions.” Properties can be found online. Contracts can be automated. Data can be analyzed instantly. But clients still need trust, perspective, reassurance, negotiation guidance and emotional clarity.\n\nThe most overlooked part of emotional intelligence is managing yourself. Agents who lack self-awareness often talk too much, become defensive, push too hard, attach emotionally to outcomes, and let rejection affect their confidence. Emotionally intelligent professionals understand their own triggers, maintain composure, avoid desperation energy, and focus on long-term relationships over short-term wins. Clients are highly sensitive to emotional energy. Calm confidence builds credibility."
+},
+{
+"text": "When the market is tough, start with the low-hanging fruit, not because it’s easy, but because momentum is fuel. Then use that fuel to climb to the top of the tree where no one else is willing to climb, and shake all the fruit into your basket. Find the most probable buyer or seller you have and focus there. Get yourself a win, boost your confidence (and yes, your bank account), then use that energy to climb past the low-hanging fruit, which is always crowded with competitors, and make the tough sale. Educate the “impossible” seller. Corral the challenging buyer."
+},
+{
+"text": "Be a leader, for your clients and in your community. Leadership requires courage, but it generates authority, credibility and trust. Following the status quo positions you as just that: status quo. Ask yourself: what is my value-add position, and where is my authority unique? Am I a listing agent? A buyer’s agent? A condo expert? Single-family homes? Do I sell more in this community or that one? Speak to your authority, be daring, and tell the market, your friends and the world who you are and how your knowledge benefits them. It is all about them."
+},
+{
+"text": "If walls could talk. If the walls of the homes you show could talk, or the doors of the car you share with clients on the way to showings, what would they say? Would they reflect the professional advisor you believe you are projecting? A professional who has earned the right to be in the room? Someone adding undeniable value to the clients who entrust you?"
+},
+{
+"text": "“The attitude you choose determines how the event unfolds.” It isn’t a real estate quote. It comes from motivational speaker Sam Demma, whose mother once told him, “You can be happy in a bank line and miserable at Disney World.” But it correlates directly with our industry, your daily life, your relationships and your emotional intelligence. How you react to the other agent, what you say when your buyer or seller starts to derail: your attitude dictates the path."
+},
+{
+"text": "The hook. We hear about it in social media, but in any interaction you have one chance to make a first impression before people keep “scrolling.” What is your client’s first impression when they hear your hook? There is no turning back from that moment, so think about how you want your clients and community to perceive you. Market expert? Daring truth teller? Courageous? Leader? If that first impression is anything but authentic, you will be backpedaling. Did you ask questions and show genuine interest, and in the process let that buyer or seller reveal their motivation? Think about your hook today."
+},
+{
+"text": "Lead with curiosity instead of judgment. When a client takes what appears to be an unreasonable position, ask questions to understand rather than passing judgment. You will learn about your client’s motivation and what makes them tick, and you will build trust."
+},
+{
+"text": "Information without application is just entertainment. A NAR study found that 87% of new real estate agents fail within five years. The agents who survive, and thrive, are not the ones who were handed better leads or a better market. They are the ones who took what they learned and built habits around it. Day after day. Quietly. Consistently.\n\nAccording to research published in the European Journal of Social Psychology by Dr. Phillippa Lally of University College London, it takes an average of 66 days of consistent repetition to form a habit. Sixty-six days of doing the uncomfortable thing until it becomes instinct. So what are you doing with these tips? Pick one. Just one. Write it down. Set a calendar reminder every morning for the next 66 days to do that one thing. Because one habit built all the way is worth a thousand ideas that never left your phone screen. Now go."
+},
+{
+"text": "“Just looking” is not a stage of the buying process; it is a defense mechanism. According to research in the Journal of Consumer Research, buyers in high-commitment, high-anxiety categories (real estate is the textbook example) use exploratory language to protect themselves from the vulnerability of wanting something they are not sure they can have. The worst thing you can do is treat “just looking” as a literal statement. The best thing you can do is make the experience of looking so valuable, so insight-rich and so free of pressure that “just looking” gradually becomes “I think we found it.” Next time a prospect says “We’re just looking,” respond with genuine curiosity: “That’s exactly the right place to start. What does the ideal look like for you?” Then listen."
+},
+{
+"text": "“Put me in, coach.” Real estate is not a spectator sport. Now more than ever, top-producing agents thrive on relationships. If you are sitting on the bench waiting for someone to call, email or reach out, you are not playing. It is time to get in the game: reach out TODAY to at least two buyers and two sellers. Provide value in your communication and leave your mark today."
+},
+{
+"text": "Know the numbers your clients would never know. Buyers and sellers can access data. They cannot access experience. Before you walk into any conversation today, ask yourself: do I know the current median days on market for the communities I serve? Agents who quote specific local market metrics in the first three minutes of a client conversation are twice as likely to retain that client through closing. Not “the market is active.” Specific numbers: median price per square meter, inventory levels, price reductions this quarter. Your client has Google. Your client has ChatGPT. What they don’t have is you interpreting those numbers for their specific situation. Pull one concrete market stat today and work it into every conversation you have this week."
+},
+{
+"text": "Comfort zone. It is a real, safe place to be. But nothing new is going to happen there. Getting comfortable with the uncomfortable is where opportunities lie. Be brave, be daring and be authentic. As you prepare for a new week, what are you doing to get out there and generate business, instead of waiting for it to fall in your lap?"
+},
+{
+"text": "What is your niche? The agents who struggle most are the ones trying to be everything to everyone. Research by Inman News consistently shows that agents with a defined geographic or property-type specialty close 40% more transactions per year than generalists, because buyers and sellers seek out the perceived expert, not the available agent. In a market like Costa Rica, where communities vary dramatically in lifestyle, price point and buyer profile, there is enormous power in owning a lane. What is yours? Buyer’s agent? Seller’s agent? Luxury homes? Land? Condos? Which clients do you bond with best: Costa Ricans, or foreigners who are part of the global migration? Find your lane, speak to those clients, and be the authority."
+},
+{
+"text": "Compete against yourself. When you look outside (your rivals, your industry, your luck), there is always something to blame. When you look inside (your process, your effort, your rate of learning), there is always something to improve. Average looks out. Elite looks in.",
+"source": "James Clear"
+},
+{
+"text": "“I don’t walk away to teach others a lesson. I walk away because I already learned mine.” In a buyer’s market, if you have already learned that overpriced listings only sit, drain resources and generate no traction, walking away only cements your position in front of that seller as someone who IS an expert and knows their data."
+},
+{
+"text": "We are expendable. We are interchangeable. We are only gatekeepers. When you wonder why new leads don’t respond, remember that many clients see real estate agents this way. It is your job to quickly prove the irreplaceable value you add to their purchase or sale. When they don’t answer the call, text. When they don’t answer either, email. When they still don’t respond, do it again, but never just to say “following up.” What value does that bring? Lead with value, knowledge and insight, and watch their perception and engagement change."
+},
+{
+"text": "Being right is irrelevant. When your buyer, seller, attorney or cooperating agent derails, do you find yourself getting defensive, argumentative or confrontational? Has that ever helped you earn your clients’ trust? Being emotionally strategic with your reaction and direction is the mark of a leader. Our clients expect us to be the calm in the storm. Whatever you are feeling, your communication should tell your client that you are unfazed: you have seen this before, and you are poised to keep steering the ship. Be the captain, not the first mate."
+},
+{
+"text": "Clients respond, or don’t, very differently than they did just one year ago. How many of you have asked yourselves, “Why is this lead not responding? It must be a dead lead”? This week, when a client does not respond, follow up again, and also ask: “How can I reframe my message so this client WANTS to respond?” If you add undeniable value through your unique market knowledge and experience, your clients will be as persistent with you as you are with them. People are searching differently, and they have higher expectations than a canned email intro."
+},
+{
+"text": "The fortune is in the follow-up, but only if the follow-up is actually useful. Most follow-up sounds the same: “Just checking in.” “Any updates?” “Are you still interested?” That does not create momentum. If you want to turn interest into income, your follow-up has to add value and create a next step. Send the new comp. Explain a market shift. Share a property that matches what they said mattered. Remind them of the goal they told you. Ask a question that moves the decision forward.\n\nGood follow-up makes the consumer feel like you were listening. Great follow-up makes the consumer feel like you are leading. A lot of opportunities don’t disappear because the client wasn’t serious. They disappear because the agent didn’t create a reason to continue the conversation. Look at your pipeline today. Who needs value, clarity or a clear next step?",
+"source": "A top real estate coach"
+},
+{
+"text": "If every agent in your market is saying the same thing, the consumer has no reason to choose you. That is why positioning matters. You should be able to finish this sentence: “I am the agent clients choose when they want ___.” Market leadership is not about serving everyone the same way. It is about becoming unmistakable to the people you are best equipped to help. Maybe it’s premium listing strategy. Maybe you are a buyer’s agent. Maybe it is negotiation, or one community rather than the broad market. Whatever it is, own it, and build your content, proof and client experience around it. A strong position makes you easier to remember. A clear message makes you easier to trust. A consistent presence makes you easier to choose. The goal is not to be one of many. The goal is to become the answer.",
+"source": "Tom Ferry"
+},
+{
+"text": "A top agent translates the market in a way that others repeat. People start to say: “She’s the neighborhood expert.” “He really markets homes.” “She knows how to negotiate.” “He’s the one I see everywhere.” “She explains things in a way that makes sense.” That is not luck. It is the result of consistent messaging and proof. Decide what you want the market to say, then post about it consistently. Known for marketing? Show the marketing. Negotiation? Explain the strategy. Local expertise? Teach the market weekly. Service? Share the experience behind the result. Reputation is not created by one post or one closing. It is created by repetition. The clearer your message, the easier you are to remember, and the easier you are to remember, the easier you are to refer."
+},
+{
+"text": "What makes a great real estate agent? It’s not the transaction. It’s how clients perceive the value you bring to it, and how they are treated. The goal is simple: provide clarity, eliminate stress, communicate proactively, and make sure every client feels informed and confident throughout the entire process. Solve problems with grace, calm and intelligence every step of the way. The best compliment is not the sale, nor the commission. It is the referral that client sends you, because they would never have their friends and family work with anyone else."
+},
+{
+"text": "One of the biggest conversion mistakes is leaving the next step optional. A client asks a question. The agent gives an answer. Then the conversation ends with “Let me know.” That is not leadership. If someone is showing interest, your job is to create momentum. Not pressure. Momentum. Try instead: “Based on what you shared, the next best step is for us to look at your options together. I can walk you through what the numbers look like and what is realistic in today’s market.” That is a stronger close because it serves the client. If you believe the conversation will help them make a better decision, asking for the appointment is not pushy. It is professional. The consumer does not always know the right next step. That is why they need an agent who can lead them to it."
+},
+{
+"text": "The best agents do not confuse activity with progress. A busy day can still produce very little income if the right conversations are not moving forward. Did you set the appointment? Ask for the commitment? Follow up with the warm lead? Reconnect with the past client? Make the call you have been avoiding? Move someone from maybe to a next step? That is progress. Not just emails. Not just scrolling. Not just a list of people you should call later. The skill is identifying the highest-value action and doing it before the day gets away from you. At the end of today, don’t ask, “Was I busy?” Ask, “Did I move opportunity closer to income?” That question will change your calendar."
+},
+{
+"text": "Clients are not looking for listings. They are looking for trustworthy advisors. Everyone has access to the listings and the data now; how you position yourself and your unique perspective is what sets you apart. How do you show, every day, in your online presence and your social posts, that you provide something different? Are you a parent? A surfer? Do you have construction or legal experience? Which clients do you gravitate to most, and vice versa? Speak to the buyers and sellers you have an affinity with, and stay authentic to who you are, bringing that specific value to your clients."
+},
+{
+"text": "A 10-day challenge for those ready to hold themselves accountable. Real estate is all about relationships. Every day: text or call 5 people you know but haven’t talked to in a while. Spend 20 minutes on social media engaging with people who posted something. Meet 1 new person and really talk with them, online, on the phone or face to face. Post 1 valuable thing your audience cares about that reflects your authentic position, then answer anyone who comments. Simple. Do them, and the relationships take care of the rest."
+},
+{
+"text": "Be prepared to confront the impossible objections with authority. Our clients are now using AI to justify their positions in depth. AI does not have your experience; it only has data. When your buyer or seller arrives with a three-page encyclopedia of an answer, are you prepared to respond with knowledge and confidence, not defensiveness?"
+},
+{
+"text": "Every agent wants more referrals. Referrals are not created by accident. They come from a system of staying connected, delivering value, and making it easy for people to remember you. The question is not “Do people like me?” It is “Do people think of me when real estate comes up?” That requires consistency. Check in. Educate. Celebrate. Follow up after the closing. Make people feel seen before you ask for anything. Your database should not be a list of names. It should be a relationship engine."
+},
+{
+"text": "One habit can change everything. If you focus on just one new business habit you struggle with (phone calls, Monday morning client calls, market updates), your chance of adopting it is 85%. Try to adopt two new habits at once and that drops to 40%. Pick one aspect of your business and make an impactful change starting today."
+},
+{
+"text": "Fear. Many of your clients are feeling it, buyers and sellers alike. As your seller accumulates days on market, what are you doing to quiet that fear? Provide market data, not when the client asks, but when they are not asking. That is value. Why is your buyer looking and looking but not transacting? Fear of making the wrong choice or overpaying in a softer market. What are you doing to ease that angst? Show them the sold transactions, and refocus them on their long-term goals and why they wanted to buy. Adding value will always produce a win. Sitting on the sidelines will always produce a benchwarmer."
+},
+{
+"text": "If something works, document it. If something is not working, let’s discuss how to fix it. If something takes too long, simplify it. If something gets missed, remember it in your next deal and learn. If something creates revenue, remind yourself next time what it was. Repeat. Growing your business is not about doing everything. It is about identifying the right things and doing them consistently, at a higher standard."
+},
+{
+"text": "The work you avoid is usually the work that changes everything. Stop avoiding the work. The next time you say “I’ll do that later” or “I’ll start on that next week,” challenge yourself and remember this."
+},
+{
+"text": "The agents who dominate a neighborhood aren’t the ones spending the most on marketing. They’re the ones who become the reason people in the community finally meet each other. What can you do in your community to connect people? When you are the glue that brings people together, people see you as a key piece of the community, and opportunity comes to you."
+},
+{
+"text": "How many of you have had closings in the past six months but haven’t reached out to your buyers and sellers since? Mark the 6-month and 1-year anniversaries of every closing on your calendar, for all sides of the deal, and reach out to thank your clients. Show them your relationship runs deeper than the transaction."
+},
+{
+"text": "What is your personal brand? It’s not your logo, your colors or your headshot. Your brand is your story, your reputation, and how you make people feel. It’s the emotional hook and the trust you create. The recognition. The resonance. It’s what others say about you when you’re not around. If you’ve been in business any length of time, you already have a brand. The work is uncovering it, not inventing it. So what is your brand? That is what you should be talking about on social media and with your clients, so that you stand out in the noisy crowd."
+},
+{
+"text": "The question isn’t whether you can be successful in today’s marketplace. Someone IS going to be successful in this same market, under the same conditions we all face. And it won’t be some secret tool or technique that drives their success. It will be their mindset and commitment. Where does that come from? From asking a different question. Not “Will I be the one?” but “Why not me?!” And if you want better results, don’t just work harder. Track better. What gets measured gets improved."
+},
+{
+"text": "The market rewards the agent who follows up when everyone else forgets. Create the task. Set the reminder. Write the message. Make the call. Then do it again. Success is rarely created by one crafty message; it comes from the discipline of showing up again and again with value."
+},
+{
+"text": "Do not assume anything. Do not assume everything is under control; get it under control. Do not assume a buyer is not a real lead because they did not respond. Be diligent, follow up, and ADD value so they WANT to respond. Do not assume you are getting the listing you visited. Follow up the day after your visit or call, provide value, and make the seller know there is no better option."
+},
+{
+"text": "“Success is not the key to happiness. Happiness is the key to success. If you love what you are doing, you will be successful.” When you serve your clients with passion because it is what you love to do, the sales, the commissions and the success come naturally. Work harder not because you are chasing money, but because you are striving to be the best at serving your clients, and success will come.",
+"source": "Albert Schweitzer"
+},
+{
+"text": "Be on time. Being late to meet buyers or sellers tells your clients they are not your priority, and you lose their trust immediately. Be early, be prepared, and shower them with knowledge, value and expertise."
+},
+{
+"text": "Most agents don’t lose deals because they lack leads. They lose them because those leads go cold somewhere between hello and sold. Generating a lead is the easy part. Staying top of mind, following up at the right moments, and nurturing the relationship until they’re ready: that’s where deals are won or lost."
+},
+{
+"text": "Opportunity, by definition, is a set of circumstances or a favorable time that makes it possible to achieve a goal. We do not have full control over opportunity, but are you giving yourself the best chance to succeed? How many unsolicited calls or emails do you send each day to offer buyers and sellers value? Not to sell them something, just: “I thought you might want to know about the latest trend in sales. Let me know if you’d like to hear more.” Or: “I have been paying close attention to recent price reductions and found something you may find helpful.” It will not always work, but it will definitely give you a better opportunity at success."
+},
+{
+"text": "“You cannot change your destiny in a day, but you can change your direction.” Imagine making small changes in your daily habits. The impact might not be seen or felt today, but imagine where you will be in 60 days, or in 6 months."
+},
+{
+"text": "What if we have been thinking about pricing the wrong way? The list price is the offer. The buyer’s first offer is actually a counteroffer. So if your seller’s offer is too high, it will not draw a counter. Use this with your sellers to help them understand why not to come out of the gate too high and join the hundreds of price reductions chasing the market, instead of establishing the market."
+},
+{
+"text": "Did you know that more than two in five homes on the market in the US (41%) have taken a price cut from their original list price? Getting the price right from the start matters more than ever. Help your sellers understand that their price is the first offer and the buyer’s is the counter. Take the time to educate them, because backtracking and price dropping is a MUCH slower strategy in a market like today’s."
+},
+{
+"text": "When I was building my career, I used to let one deal that fell apart ruin my day, my week, even my month. I learned perspective, and reminded myself that each lost deal contained a lesson I would use to close two more. Ryan Serhant recently offered a great recommendation: use CPR. Control: focus on the things you can control, not the ones you cannot. Perspective: keep it, in the grand scheme of your business and even within the transaction. Re-engage: with the clients from that transaction, to see if the deal can be salvaged or another put together, or just re-engage in general and move on. The sooner you take these steps, the sooner the next success comes."
+},
+{
+"text": "Back to the basics. Pick one of your listings and evaluate the current market. Who is the buyer profile? Are you proactively reaching out to agents and clients to put the opportunity in front of them? Are you in communication with your seller? Does the price need to be re-evaluated? One listing at a time. Small steps and back to basics."
+},
+{
+"text": "Success isn’t built during moments of motivation. It’s built during the moments when motivation disappears… and you execute anyway."
+},
+{
+"text": "“The heaviest weight at the gym is the front door.” The key to building successful business habits is simply opening the computer, picking up the phone… just starting. Don’t be overwhelmed by what is behind that front door. Just open it."
+},
+{
+"text": "The market isn’t against you. It doesn’t know you exist. Stop taking conditions personally and start responding professionally."
+},
+{
+"text": "Everyone wants a better CRM. Few people want better CRM habits. There’s your competitive advantage. Before saying “I wish I had more leads” or “The leads I have are flat,” ask yourself what you did today, or more importantly what you can do tomorrow, to nurture the ones you already have. How active are you on social media, where a live audience is looking to absorb content? How often do you write to old clients to see how they are doing and share market updates? Are you thinking outside the box to offer proactive solutions to buyers and sellers? Today is the day to change those habits."
+},
+{
+"text": "Back to the basics. Think about your wins: your best listings or recent sales. Focus on just one thing you can repeat. If your success has been in the neighborhood where you live, start there. Organize an open house, or even a non-real-estate social gathering, to put yourself at the center of the market. If your recent wins came from previous clients, dig into your CRM and reach out to your repeat buyers. We all have a handful of clients who are always buying, who ask us, “What’s a great deal I can buy right now?” Go find it for them, be prepared to justify the “deal” with numbers and real market insight, and win that next deal!"
+},
+{
+"text": "Five simple things that contribute to success:\n1. Are you early? Not on time. Early.\n2. Are you prepared? Do you know your stats when you walk into that listing appointment or showing?\n3. Are you giving your best effort? Do not judge a client before walking in. Always bring your best.\n4. Are you transmitting a positive attitude? Pessimism is perceived in an instant.\n5. Do not assume. I can’t tell you how many times I have seen an agent assume a client’s budget, assume they are not qualified, assume they won’t like the house. Don’t assume. Learn, then transmit your value."
+},
+{
+"text": "Relationships matter now more than ever. Our clients have access to the same data you do. What they don’t have is your experience, your relationships and your perspective. The combination of the two will drive success in today’s real estate climate. Use data to set the tone, and use experience and confidence to build trust."
+},
+{
+"text": "“The true test of character is your commitment to ethics when the low road looks faster and more profitable.”"
+},
+{
+"text": "Phone call or personal meeting. With all of the tech and AI improving the pace of our business, nothing can replace these two tools. Have a genuine conversation, backed by the data and knowledge you have built, and watch it outperform everything else. Pick up the phone today and call one seller and one buyer. Do not wait for them to ask for the call; by then it is too late. You are their advisor, and you add no value if you are not constantly advising."
+},
+{
+"text": "Today is a gift. That is why it is called the present. In business and in life, perspective is everything. If you see today as a gift, you know you need to open it and see what is inside. But most importantly: what are you going to do with it? Use your talent. Remind yourself that you belong in the room. Make yourself heard. Be a leader in your market, neighborhood and community, and stand out today."
+},
+{
+"text": "Perspective. How many of you have a client who calls three times a day, or more? On the last call, you look at the name on the phone and sigh: seriously, again? Change that perspective. That is not an annoying client. That is a client who believes in you and trusts you as their first stop. That is exactly the kind of trust you are trying to build, and that client will tell everyone they know about the agent who is always there for them. So be there. Empathize with their needs, and instead of “What a pain,” say “I’m so glad I’ve earned this client’s trust.” In a world where AI makes everyone believe they know everything, cherish the clients who value your opinion and expertise."
+},
+{
+"text": "Familiar, not famous. The purpose of your videos and posts is not to become famous. It is to become familiar. Don’t measure the success of your content only by views, likes and followers. A property video with 100,000 views that generates no meaningful interest, no buyer inquiry and no future business hasn’t accomplished much. A video with five views that produces one serious buyer, or makes a seller say “That’s how I want my property represented,” may be worth every penny. Your content should help the right people repeatedly see who you are, what you know, how you communicate and how you represent your clients."
+},
+{
+"text": "It is not a buyer’s or a seller’s market. It is an agent’s market. The agents who create conversations, uncover opportunities and respond quickly and with value are the ones winning right now. If you are waiting for the market to come to you, it will be a challenge. If you seek out the right listings, listen to and understand your seller, never assume what price that seller will take, identify buyers for each specific property and work hard, this market will reward you."
+},
+{
+"text": "You don’t need to win the week today. You just need to start it. Make one call you’ve been putting off. Follow up with one buyer. Check in with one seller. Create one new conversation. Do something that moves your business forward, and let that first win pull you into the week."
+},
+{
+"text": "The agents who succeed in September are the ones who decided to win in July. As you think about how you will finish the year, remember that it is a decision. Your year will change because of you, and the actions and mentality you put in place starting today."
+},
+{
+"text": "Reduce, reuse, recycle. This ecological phrase can be recycled into your real estate mentality. In a more challenging market, instead of focusing on where new leads will come from, focus on your CRM and your sphere of influence. Reuse the value and authority you have built. Reduce the noise and stress about where new leads are coming from. Recycle the relationships you have earned to find your next transaction."
+},
+{
+"text": "“Trust is the new currency of today’s world.” Think about that. Social media, AI, data, technology: all of it matters and impacts our business. But don’t let any of it cloud the truest of truths. At the core, it still comes down to trust, confidence and relationships.",
+"source": "Stephen Covey"
+},
+{
+"text": "“AI can tell you what the market is doing. It won’t tell a nervous seller it’s going to be okay. That’s still your job.” It could not be more true. Every day that goes by without you talking to your seller, that seller is all alone. They need you to explain what you are seeing and give them insight and advice. Don’t wait for the seller to call asking; make this part of your daily routine."
+},
+{
+"text": "Don’t share the headline. Interpret it. A recent Redfin report says sellers now outnumber buyers in the US by nearly 58%, the largest gap they’ve recorded. You can see that as alarming news, or as a reason to have a conversation. Call a buyer: “Are you aware of how much negotiating leverage buyers may have in parts of the US right now? Let’s talk about what that could mean for your plans in Costa Rica.” Call a seller: “Have you seen what’s happening with inventory in the US? Let’s talk about what it could mean for buyer expectations and how we should position your property.” Anyone can forward an article or repeat a statistic. An advisor provides context, asks the right questions and starts the conversation. Use the news. Don’t sell the news. Be the person your clients call to understand what it means."
+},
+{
+"text": "The agent with the most conversations always wins."
+},
+{
+"text": "AI is only a threat to agents who do not build trust with their clients. AI will provide data, comparative market analyses and sales objections, but it cannot replace trust. Have deeper conversations with your clients, and be proactive to make sure your competitive advantage is always protected."
+},
+{
+"text": "If you are too big to do the small things, you will always be too small to do the big things. It rings even more true in today’s market. Think you are too successful or too busy to use the CRM, take notes, create tasks, add tags and follow up with clients regularly? When push comes to shove, the big deals that get complicated, and the big clients who expect everything from you, will always be too big for you. Step up now and do the little things, in business and in your personal life. Watch the difference it makes."
+},
+{
+"text": "“The victory goes to the one who is good at the fundamentals. Are you willing to pay the price?” Two of the industry’s critical Achilles’ heels are accurate pricing, which makes the market come to you and your sellers, and seller communication. If you wait for your seller to call asking what is happening, it is too late. Before taking your next listing, ask yourself: have I given my client the comps that show the maximum value the market will bear, while staying confident in the absorption? And am I truly prepared to service this client? Look in the mirror before saying yes to the listing.",
+"source": "Thomas Wright, Park City, Utah"
+},
+{
+"text": "As everyone keeps talking about the importance of AI, don’t forget the importance of U and I in a relationship. AI can and should be used by agents to accelerate and create efficiencies, but U and I are at the core of relationships. That is where the opportunities truly remain."
+},
+{
+"text": "A buyer’s market doesn’t eliminate urgency; it changes where urgency comes from. More inventory means buyers have more choices, more negotiating power, and often more time to decide. Our job is to turn that leverage into an advantage, not complacency. The conversation should be: “You have leverage today. Let’s use it.” A better price. Better terms. Furniture. Closing costs. A motivated seller may accept something today they would not have considered a year ago. But buyer leverage has an expiration date: the right property can sell, the seller’s circumstances can change, or another buyer can spot the same opportunity. Don’t manufacture urgency. Identify the opportunity that exists today, and give the buyer a reason to act on it."
+},
+{
+"text": "Activity without intention can easily become motion without progress. Market with intention. List and price with intention. Show with intention. Follow up with intention. Advise with intention. The intent may differ in every situation. The mindset shouldn’t."
+},
+{
+"text": "People hire people, not listings. Ever wonder why your listing inquiries have slowed? How active are you on social media? How active are you in your local market and neighborhood?"
+},
+{
+"text": "On your upcoming listing appointments, remember: the price a seller puts on their home will sell a home this season. The question is whether it sells their home, or becomes the comp that sells their neighbor’s."
+},
+{
+"text": "Stop talking about the market as if it exists. It doesn’t matter what the market does today; it matters what you do today. The market is just a backwards way of describing a bunch of phenomena that economists like to turn into news and reports. There is no market. There are people helping people today and creating opportunities. Stop psyching yourself out about the market being up, down, faster, slower, going somewhere or having been somewhere, and instead ask: “What am I doing today?”",
+"source": "Matthew Ferrara"
+},
+{
+"text": "If I hand you the keys to a Porsche, you won’t get to your destination any faster if it stays parked in the driveway. Put the keys in and DRIVE."
+},
+{
+"text": "Know your value. The next time a seller says your commission is too high, ask: “Compared to what? An agent who is willing to discount their commission and get you less for your home? If I am willing to discount my own worth now, what does that tell you about what I will do when I am negotiating for you?”"
+},
+{
+"text": "61% of buyers. 64% of sellers. That’s how many are using AI during their home search or sale, according to US data. For first-time buyers, it’s 70%. Be ready to explain what AI gets right, what it misses, and how it applies to your local market. That’s where your expertise matters. Search what your clients are searching, and challenge yourself and your AI tools, so you know your clients’ objections before they do."
+},
+{
+"text": "Follow what is happening in the US housing market; it affects our markets here. In pricing discussions with sellers, showing that you speak with authority beyond your local market builds credibility."
+},
+{
+"text": "As AI-powered search becomes more influential, a strong digital presence is no longer just about looking polished. It is about being visible, credible and positioned as the trusted authority in your market. Your posting is not about popularity; it is about claiming authority in your niche. When a client engages with you, what do you do? You search online to see who they are. Guess what: your clients do the same. So what do they find? Scour your online presence, make it uniform and make your message clear, so that both AI searches and your clients find comfort and value in who you are and what you bring to their transaction."
+},
+{
+"text": "Priced right beats price reduced. Which message resonates more with buyers? “Priced at Market” or “Just Reduced”? “Priced Right” or “Price Improvement”? “Great Value” or “Motivated Seller”? In this market, pricing is not just a number. It’s a strategy. Educate your sellers on the risks of “testing the market” with an unrealistic price. The greatest opportunity to capture buyer attention is often when a property is first introduced. Overpricing costs momentum, increases days on market, and ultimately leads to the very price reductions sellers hoped to avoid. Our responsibility as trusted advisors isn’t to tell sellers what they want to hear. It’s to help them make informed decisions based on market evidence and our experience."
+},
+{
+"text": "Stop waiting for the market. Choose your 5. In a market like this, the phone doesn’t ring on its own. The agents winning right now aren’t busier than everyone else; they’re more deliberate about who they spend their time on. Open Rechat today and pick 5 people. Not your whole database, just 5: past clients, sphere, and buyers or sellers who went quiet. Tag them. Then give each one a reason to hear from you that has nothing to do with “just checking in”: a new listing that fits what they told you they wanted, a price change in their neighborhood, a market stat that matters to their property. A message with a reason gets a reply. A reminder that you exist gets ignored. Do this every Friday and by year end you’ll have had hundreds of intentional conversations. Activity doesn’t move this market. Intent does."
+},
+{
+"text": "Every “slow market” story has a less-read story: the agents who kept working instead of waiting wrote themselves out of it."
+},
+{
+"text": "One listing. Ten stories. Too often we launch a listing, post it, share a property tour, and move on. But every listing can be an entire marketing campaign, not a one-time announcement.\nShowcase the property: a walkthrough; three features that make it special; what the asking price actually buys; who the ideal buyer might be.\nEducate your audience: how it compares to competing properties; common mistakes buyers should avoid; what makes the neighborhood desirable.\nDemonstrate your expertise: the strategy behind the asking price; how a buyer should evaluate its value; what differentiates it from similar listings.\nEach story speaks to a different buyer and answers a different question. Your responsibility as an advisor doesn’t end when the listing goes live. Today’s challenge: pick ONE active listing and find THREE new ways to tell its story this week. Sometimes you don’t need more listings, just more ways to market the ones you have."
+},
+{
+"text": "Technology creates efficiency. Knowledge creates confidence. Action creates opportunity. Without action, the technology and knowledge mean nothing. Our goal isn’t simply to learn more, adopt more tools or become better informed. It’s to become more effective at what we already know we need to do."
+},
+{
+"text": "Knowing someone, or having them in your database, means nothing if you do not nurture the relationship. A mind-blowing stat: 79% of buyers surveyed in a 2025 Consumer Housing Trends study said they would use their agent again or recommend them. Yet only 13% of repeat buyers actually did. That 66% gap is the relationship: the value you add and how often you stay in touch.",
+"source": "Scott Cutter"
+},
+{
+"text": "If you only call your past clients when you need business, they don’t have much reason to believe the relationship matters to you. People can feel when the warmth has a quota attached. Find a reason to care about their lives when there isn’t a transaction available. 79% of buyers say they would use their agent again, but only 13% do. That gap lives right here."
+}
+];
+
+(() => {
+  const tipEl = document.getElementById("tip");
+  const flipper = document.getElementById("flipper");
+  const faces = [...flipper.children];
+  const reader = document.getElementById("reader");
+  const readerText = document.getElementById("readerText");
+  const readerSource = document.getElementById("readerSource");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const KEY = "atlas-tips-seen";
+
+  // Random order without repeats until every tip has been shown
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) {}
+  function pick() {
+    if (seen.length >= TIPS.length) seen = [];
+    const pool = TIPS.map((_, i) => i).filter(i => !seen.includes(i));
+    const i = pool[Math.floor(Math.random() * pool.length)];
+    seen.push(i);
+    try { localStorage.setItem(KEY, JSON.stringify(seen)); } catch (e) {}
+    return i;
+  }
+
+  const refresh = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5V5h-2.5"/></svg>`;
+  function fill(face, i) {
+    const tip = TIPS[i];
+    face.innerHTML = `
+      <div class="tip-head"><span class="tip-label">Tip of the Day</span><span class="tip-num"></span></div>
+      <div class="tip-body"><div class="tip-text"><span></span></div></div>
+      <div class="tip-foot">
+        <span class="tip-source"></span>
+        <span class="tip-actions">
+          <button class="read-btn" type="button">Read full tip</button>
+          <button class="next-btn" type="button">Next tip ${refresh}</button>
+        </span>
+      </div>`;
+    face.querySelector(".tip-num").textContent = `No. ${i + 1}`;
+    face.querySelector(".tip-text span").textContent = tip.text;
+    face.querySelector(".tip-source").textContent = tip.source ? `— ${tip.source}` : "Todd & Scott";
+    face.querySelector(".next-btn").onclick = next;
+    face.querySelector(".read-btn").onclick = () => openReader(i);
+    face.dataset.index = i;
+    fit(face);
+  }
+
+  // Shrink the text until it fits; very long tips get a "Read full tip" button
+  function fit(face) {
+    const el = face.querySelector(".tip-text");
+    const max = Math.min(30, Math.max(20, tipEl.clientWidth / 15)), min = 19;
+    face.classList.remove("long", "short");
+    let size = max;
+    el.style.fontSize = size + "px";
+    while (el.scrollHeight > el.clientHeight + 1 && size > min) {
+      size -= .5; el.style.fontSize = size + "px";
+    }
+    face.classList.toggle("long", el.scrollHeight > el.clientHeight + 1);
+    // Short tips sit in the middle of the card instead of hugging the top
+    if (size === max && el.firstElementChild.offsetHeight < el.clientHeight * .8) face.classList.add("short");
+  }
+
+  let angle = 0, current = 0;
+  function next() {
+    const i = pick();
+    if (!reader.hidden) showInReader(i);
+    const hidden = faces[(current + 1) % 2];
+    fill(hidden, i);
+    angle += 180;
+    flipper.style.transform = `rotateY(${angle}deg)`;
+    faces[current].setAttribute("aria-hidden", "true");
+    hidden.removeAttribute("aria-hidden");
+    current = (current + 1) % 2;
+    if (reduce) flipper.style.transition = "none";
+  }
+
+  function showInReader(i) {
+    readerText.textContent = TIPS[i].text;
+    readerText.scrollTop = 0;
+    readerSource.textContent = TIPS[i].source ? `— ${TIPS[i].source}` : "Todd & Scott";
+    reader.dataset.index = i;
+  }
+  let lastFocus = null;
+  function openReader(i) {
+    lastFocus = document.activeElement;
+    showInReader(i);
+    reader.hidden = false;
+    document.getElementById("readerClose").focus();
+  }
+  function closeReader() { reader.hidden = true; if (lastFocus) lastFocus.focus(); }
+  document.getElementById("readerClose").onclick = closeReader;
+  document.getElementById("readerNext").onclick = () => {
+    if (getComputedStyle(tipEl).display === "none") showInReader(pick()); else next();
+  };
+  reader.addEventListener("click", e => { if (e.target === reader) closeReader(); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && !reader.hidden) closeReader(); });
+  document.getElementById("tipPill").onclick = () => openReader(Number(faces[current].dataset.index));
+
+  // Keep the card centered between the date (top) and the app tiles (bottom)
+  function place() {
+    tipEl.style.transform = "";
+    tipEl.style.height = "";
+    if (getComputedStyle(tipEl).display === "none") return;
+    const top = document.getElementById("today").getBoundingClientRect().bottom;
+    const bottom = document.getElementById("apps").getBoundingClientRect().top;
+    const room = bottom - top;
+    const gap = Math.max(24, Math.min(56, room * .09));
+    const h = Math.min(430, room - gap * 2);
+    tipEl.style.height = h + "px";
+    const r = tipEl.getBoundingClientRect();
+    tipEl.style.transform = `translateY(${top + (room - h) / 2 - r.top}px)`;
+  }
+  place();
+  fill(faces[0], pick());
+  let ft; addEventListener("resize", () => { clearTimeout(ft); ft = setTimeout(() => { place(); faces.forEach(f => f.dataset.index && fit(f)); }, 150); });
+  if (document.fonts) document.fonts.ready.then(() => { place(); faces.forEach(f => f.dataset.index && fit(f)); });
+})();
+
+/* Greeting + date */
+const now = new Date(), h = now.getHours();
+const GREET = h < 12 ? ["Good morning", "Buenos días"] : h < 18 ? ["Good afternoon", "Buenas tardes"] : ["Good evening", "Buenas noches"];
+const greetEl = document.getElementById("greeting");
+greetEl.textContent = GREET[0];
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  let g = 0;
+  setInterval(() => {
+    greetEl.classList.add("out");
+    setTimeout(() => {
+      g = 1 - g; greetEl.textContent = GREET[g];
+      greetEl.classList.remove("out"); greetEl.classList.add("in");
+      void greetEl.offsetWidth;
+      greetEl.classList.remove("in");
+    }, 700);
+  }, 5000);
+}
+document.getElementById("today").textContent = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+/* Living topographic map: slowly drifting contour lines */
+(() => {
+  const canvas = document.getElementById("terrain");
+  const ctx = canvas.getContext("2d");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- Perlin noise ----
+  const p = new Uint8Array(512);
+  const base = [...Array(256).keys()].sort(() => Math.random() - .5);
+  for (let i = 0; i < 512; i++) p[i] = base[i & 255];
+  const fade = t => t * t * t * (t * (t * 6 - 15) + 10);
+  const lerp = (a, b, t) => a + t * (b - a);
+  const grad = (h, x, y) => ((h & 1) ? -x : x) + ((h & 2) ? -y : y);
+  function noise(x, y) {
+    const X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
+    x -= Math.floor(x); y -= Math.floor(y);
+    const u = fade(x), v = fade(y), a = p[X] + Y, b = p[X + 1] + Y;
+    return lerp(lerp(grad(p[a], x, y), grad(p[b], x - 1, y), u),
+                lerp(grad(p[a + 1], x, y - 1), grad(p[b + 1], x - 1, y - 1), u), v);
+  }
+  const terrain = (x, y, t) => noise(x + t, y - t * .6) * .7 + noise(x * 2.1 - t * .5, y * 2.1 + t) * .3;
+
+  // ---- Settings ----
+  const LEVEL = 0.09;          // height between two contour lines
+  const MAJOR = 4;             // every 4th line is green
+
+  let W, H, cols, rows, step;
+
+  function resize() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    step = W < 700 ? 9 : 12;
+    cols = Math.ceil(W / step) + 1; rows = Math.ceil(H / step) + 1;
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    const s = 1 / 260, val = new Float32Array(cols * rows);
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      val[j * cols + i] = terrain(i * step * s, j * step * s, t);
+    }
+
+    const minor = new Path2D(), major = new Path2D();
+    for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
+      const a = val[j*cols+i], b = val[j*cols+i+1], c = val[(j+1)*cols+i+1], d = val[(j+1)*cols+i];
+      const lo = Math.min(a, b, c, d), hi = Math.max(a, b, c, d);
+      for (let L = Math.ceil(lo / LEVEL); L * LEVEL <= hi; L++) {
+        const th = L * LEVEL;
+        const idx = (a > th) | ((b > th) << 1) | ((c > th) << 2) | ((d > th) << 3);
+        if (idx === 0 || idx === 15) continue;
+        const path = (L % MAJOR === 0) ? major : minor;
+        const x = i * step, y = j * step;
+        const T = [x + step*(th-a)/(b-a), y], R = [x + step, y + step*(th-b)/(c-b)],
+              B = [x + step*(th-d)/(c-d), y + step], Lf = [x, y + step*(th-a)/(d-a)];
+        const seg = (p1, p2) => { path.moveTo(p1[0], p1[1]); path.lineTo(p2[0], p2[1]); };
+        switch (idx) {
+          case 1: case 14: seg(Lf, T); break;  case 2: case 13: seg(T, R); break;
+          case 3: case 12: seg(Lf, R); break;  case 4: case 11: seg(R, B); break;
+          case 6: case 9: seg(T, B); break;    case 7: case 8: seg(Lf, B); break;
+          case 5: seg(Lf, T); seg(R, B); break; case 10: seg(T, R); seg(Lf, B); break;
+        }
+      }
+    }
+    ctx.lineWidth = 1;   ctx.strokeStyle = "rgba(111,144,150,.42)"; ctx.stroke(minor);
+    ctx.lineWidth = 1.3; ctx.strokeStyle = "rgba(122,185,66,.55)";  ctx.stroke(major);
+  }
+
+  resize();
+  let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { resize(); if (reduce) draw(0); }, 150); });
+  if (reduce) { draw(0); return; }
+  let last = 0;
+  (function loop(ms) { if (ms - last > 40) { draw(ms / 60000); last = ms; } requestAnimationFrame(loop); })(0);
+})();
+</script>
+</body>
+</html>
